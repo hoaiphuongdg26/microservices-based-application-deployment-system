@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: website-db
+  labels:
+    name: website-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: website-db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: website-db
+    spec:
+      containers:
+        - name: website-db
+          image: plinhcute03/mysql57:latest
+          ports:
+            - name: db
+              containerPort: 3306
+          volumeMounts:
+            - name: website-db-volume
+              mountPath: /var/lib/mysql/website
+      volumes:
+        - name: website-db-volume
+          persistentVolumeClaim:
+            claimName: website-db-pvc
+      imagePullSecrets:
+        - name: plinhcute03
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: website-db-svc
+spec:
+  selector:
+    app: website-db
+  ports:
+    - port: 3306
+      targetPort: 3306

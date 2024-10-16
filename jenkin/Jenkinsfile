@@ -1,0 +1,111 @@
+pipeline {
+    environment {
+        imagename = "hoaiphuongdg26"
+        imagetag = "website:latest"
+        sitedeploy = "website-app"
+        helmdeploy = "website"
+        gitrepo = <gitrepo>
+        gitbranch = 'main'
+        serverip = '192.168.1.35'
+        serverport = 22
+        sshagent = 'ssh-key'
+        telegramBotToken = <telegramBotToken> 
+        telegramChatId = '-4173810166' 
+    }
+
+    agent any
+
+    stages {
+
+        stage('Cloning Git') {
+            steps {
+                script {
+                    sh """
+                        curl --location 'https://api.telegram.org/bot${env.telegramBotToken}/sendMessage' \
+                                --form 'chat_id="${env.telegramChatId}"' \
+                                --form 'text=BUILDING ${env.gitrepo} on branch ${env.gitbranch}'
+                    """
+                    git([url: "${env.gitrepo}", branch: "${env.gitbranch}", credentialsId: 'git-token'])
+                }
+            }
+        }
+
+        stage('Initialize') {
+            steps {
+                script {
+                    def dockerHome = tool 'myDocker'
+                    env.PATH = "${dockerHome}/bin:${env.PATH}"
+                    env.DOCKER_BUILDKIT = "1"
+                }
+            }
+        }
+
+        stage('Building image') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-hp', passwordVariable: 'password', usernameVariable: 'username')]) {
+                        sh """
+                            docker login -u $username -p $password
+                            docker build --pull -t $imagename/$imagetag .
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Push images') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-hp', passwordVariable: 'password', usernameVariable: 'username')]) {
+                        sh """
+                            docker login -u $username -p $password
+                            docker push $imagename/$imagetag
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Clean build') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-hp', passwordVariable: 'password', usernameVariable: 'username')]) {
+                        sh """
+                            docker login -u $username -p $password
+                            docker rmi $imagename/$imagetag
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('deploy') {
+            steps {
+                script {
+                    sshagent(["${env.sshagent}"]) {
+                        sh """
+                           ssh -o StrictHostKeyChecking=no ubuntu@${env.serverip} -p ${env.serverport} "cd /; sudo helm upgrade --install --set imagename=${imagename} --set imagetag=${imagetag} --recreate-pods ${helmdeploy} /website/website --namespace default --wait --timeout 300s"
+                        """
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            sh """
+                curl --location 'https://api.telegram.org/bot${env.telegramBotToken}/sendMessage' \
+                        --form 'chat_id="${env.telegramChatId}"' \
+                        --form 'text=✅ DEPLOY SUCCESS ${env.sitedeploy}'
+            """
+        }
+        failure {
+            sh """
+                curl --location 'https://api.telegram.org/bot${env.telegramBotToken}/sendMessage' \
+                        --form 'chat_id="${env.telegramChatId}"' \
+                        --form 'text=❌ DEPLOY FAILED ${env.sitedeploy}'
+            """
+        }
+    }
+}

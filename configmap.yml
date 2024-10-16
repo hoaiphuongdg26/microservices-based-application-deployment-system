@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: website-configmap
+data:
+  DB_NAME: website
+  DB_USER: website
+  DB_HOST: website-db-svc
+  DB_PORT: "3306"
+  DB_NAME_SLAVE: website
+  DB_USER_SLAVE: website
+  DB_HOST_SLAVE: website-db-svc
+  SITE_URL: "http://website-app-svc:31000/"
+  APP_KEY: DACN
+  BRAND_ID: DACN
+

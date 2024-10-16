@@ -1,0 +1,73 @@
+replicaCount: 1
+
+image:
+  repository: sonarqube
+  pullPolicy: Always
+  tag: "9.9.2-community"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+probe:
+  enabled: false
+
+service:
+  type: ClusterIP
+  port: 80
+  containerPort: 9000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: letsencrypt-issuer
+  hosts:
+    - host: sonarqube.example.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+resources: {}
+autoscaling:
+  enabled: false
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+config: 
+  - name: drone-runner-config
+    data:
+      - key: SONAR_JDBC_URL
+        value: jdbc:postgresql://192.168.1.35:5432/sonar
+      - key: SONAR_JDBC_USERNAME
+        value: sonar
+      - key: SONAR_JDBC_PASSWORD
+        value: <password>
+
+persistentVolumeClaim:
+  sonarqubeData:
+    storageClass: standard
+    accessModes: ["ReadWriteMany"]
+    size: 5Gi
+
+  sonarqubeExtensions:
+    storageClass: standard
+    accessModes: ["ReadWriteMany"]
+    size: 3Gi
+
+  sonarqubeLogs:
+    storageClass: standard
+    accessModes: ["ReadWriteMany"]
+    size: 10Gi
+

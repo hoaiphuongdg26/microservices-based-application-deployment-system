@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: website-app
+  labels:
+    name: website-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: website-app
+  template:
+    metadata:
+      labels:
+        app: website-app
+    spec:
+      containers:
+        - name: website-app
+          image: hoaiphuongdg26/website:latest
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            requests:
+              cpu: "400m"
+              memory: "512Mi"
+              ephemeral-storage: "1Gi"
+            limits:
+              cpu: "600m"
+              memory: "1Gi"
+              ephemeral-storage: "2Gi"
+          env:
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: website-secret
+                  key: DB_PASS
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: DB_PORT
+            - name: DB_NAME_SLAVE
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: DB_NAME_SLAVE
+            - name: DB_USER_SLAVE
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: DB_USER_SLAVE
+            - name: DB_PASS_SLAVE
+              valueFrom:
+                secretKeyRef:
+                  name: website-secret
+                  key: DB_PASS_SLAVE
+            - name: DB_HOST_SLAVE
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: DB_HOST_SLAVE
+            - name: SITE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: SITE_URL
+            - name: APP_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: APP_KEY
+            - name: BRAND_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: website-configmap
+                  key: BRAND_ID
+          volumeMounts: 
+            - name: website-app-volume 
+              mountPath: "/var/www/html/cache"  
+      volumes: 
+        - name: website-app-volume 
+          persistentVolumeClaim: 
+            claimName: website-app-pvc
+      imagePullSecrets:
+        - name: hoaiphuongdg26
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: website-app-svc
+spec:
+    type: ClusterIP
+    selector:
+        app: website-app
+    ports:
+        -   port: 80
+            targetPort: 80
+            protocol: TCP

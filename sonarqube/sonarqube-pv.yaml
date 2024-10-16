@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-sonarqube-data
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: /mnt/data/sonarqube-data
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-sonarqube-extensions
+spec:
+  capacity:
+    storage: 3Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: /mnt/data/sonarqube-extensions
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-sonarqube-logs
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    path: /mnt/data/sonarqube-logs
